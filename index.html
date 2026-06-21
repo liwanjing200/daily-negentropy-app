@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#fff9f7">
+  <title>日常负熵 · 每日小记</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow" id="todayLabel"></p>
+        <h1>日常负熵 <span>✿</span></h1>
+        <p class="cloud-status" id="cloudStatus">本地保存 · 正在连接云端</p>
+      </div>
+      <button class="icon-button" id="jumpToday" type="button" aria-label="回到今天">今</button>
+    </header>
+
+    <main>
+      <section class="page active" id="todayPage">
+        <div class="date-row card soft-card">
+          <label for="recordDate">查看日期</label>
+          <input id="recordDate" type="date">
+        </div>
+
+        <div class="summary-grid">
+          <article class="summary-card rose">
+            <span>完成率</span>
+            <strong id="completionRate">0%</strong>
+          </article>
+          <button class="summary-card cream" id="openReview" type="button">
+            <span>今日复盘</span>
+            <strong>去记录 →</strong>
+          </button>
+          <article class="summary-card lilac">
+            <span>今日付款</span>
+            <strong id="paymentTotal">¥0.00</strong>
+          </article>
+          <article class="summary-card sage-summary">
+            <span>连续打卡</span>
+            <strong id="streakDays">0 天</strong>
+          </article>
+        </div>
+
+        <section class="card section-card">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">TODAY'S LIST</p>
+              <h2>今日任务</h2>
+            </div>
+            <span class="count-badge" id="taskCount">0 / 0</span>
+          </div>
+          <form class="inline-form" id="taskForm">
+            <input id="taskInput" type="text" maxlength="80" placeholder="写下一件想完成的事…" required>
+            <button type="submit">添加</button>
+          </form>
+          <div class="empty-state" id="taskEmpty">今天还没有任务，慢慢开始也很好。</div>
+          <ul class="task-list" id="taskList"></ul>
+        </section>
+
+        <section class="card section-card">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">PAYMENTS</p>
+              <h2>付款记录</h2>
+            </div>
+            <strong class="mini-total" id="paymentMiniTotal">¥0.00</strong>
+          </div>
+          <form class="payment-form" id="paymentForm">
+            <div class="field">
+              <label for="paymentTime">付款时间</label>
+              <input id="paymentTime" type="time" required>
+            </div>
+            <div class="field">
+              <label for="paymentItem">付款项目</label>
+              <input id="paymentItem" type="text" maxlength="50" placeholder="例如：午餐" required>
+            </div>
+            <div class="field">
+              <label for="paymentAmount">金额</label>
+              <input id="paymentAmount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00" required>
+            </div>
+            <div class="field">
+              <label for="paymentMethod">支付方式</label>
+              <select id="paymentMethod">
+                <option>微信</option>
+                <option>支付宝</option>
+                <option>银行卡</option>
+                <option>现金</option>
+                <option>其他</option>
+              </select>
+            </div>
+            <div class="field full">
+              <label for="paymentNote">备注</label>
+              <input id="paymentNote" type="text" maxlength="100" placeholder="可选">
+            </div>
+            <button class="primary-button full" type="submit">记一笔</button>
+          </form>
+          <div class="empty-state" id="paymentEmpty">今天还没有付款记录。</div>
+          <div class="payment-list" id="paymentList"></div>
+        </section>
+      </section>
+
+      <section class="page" id="reviewPage">
+        <div class="page-title">
+          <button class="back-button" data-page="today" type="button">←</button>
+          <div>
+            <p class="section-kicker" id="reviewDateLabel"></p>
+            <h2>今日复盘</h2>
+          </div>
+        </div>
+        <form class="card review-form" id="reviewForm">
+          <div class="field full">
+            <label for="reviewDone">今天完成了什么</label>
+            <textarea id="reviewDone" rows="3" placeholder="记录今天的小小成果…"></textarea>
+          </div>
+          <div class="field full">
+            <label for="reviewUndone">今天没完成什么</label>
+            <textarea id="reviewUndone" rows="3" placeholder="没关系，诚实记录就好。"></textarea>
+          </div>
+          <div class="field full">
+            <label for="reviewProblems">今天的问题</label>
+            <textarea id="reviewProblems" rows="3" placeholder="是什么让事情变得困难？"></textarea>
+          </div>
+          <div class="field full">
+            <label for="reviewImprove">明天要改进什么</label>
+            <textarea id="reviewImprove" rows="3" placeholder="给明天一个清晰的小提示…"></textarea>
+          </div>
+          <fieldset class="mood-field">
+            <legend>今日心情</legend>
+            <div class="moods" id="moodOptions">
+              <label><input type="radio" name="mood" value="很棒"><span>🥰<small>很棒</small></span></label>
+              <label><input type="radio" name="mood" value="开心"><span>😊<small>开心</small></span></label>
+              <label><input type="radio" name="mood" value="平静"><span>😌<small>平静</small></span></label>
+              <label><input type="radio" name="mood" value="疲惫"><span>😮‍💨<small>疲惫</small></span></label>
+              <label><input type="radio" name="mood" value="低落"><span>🥺<small>低落</small></span></label>
+            </div>
+          </fieldset>
+          <div class="field full">
+            <label for="reviewNote">今日备注</label>
+            <textarea id="reviewNote" rows="4" placeholder="其他想留下来的话…"></textarea>
+          </div>
+          <button class="primary-button full" type="submit">保存今日复盘</button>
+          <p class="save-hint" id="reviewSaveHint">内容会自动保存在本地并同步到云端</p>
+        </form>
+      </section>
+
+      <section class="page" id="historyPage">
+        <div class="page-title simple-title">
+          <div>
+            <p class="section-kicker">MEMORIES</p>
+            <h2>历史记录</h2>
+          </div>
+        </div>
+        <div class="date-row card soft-card">
+          <label for="historyDate">选择日期</label>
+          <input id="historyDate" type="date">
+        </div>
+        <div id="historyContent"></div>
+      </section>
+
+      <section class="page" id="guidePage">
+        <div class="page-title simple-title">
+          <div>
+            <p class="section-kicker">NEGENTROPY GUIDE</p>
+            <h2>负熵指南</h2>
+          </div>
+        </div>
+        <blockquote class="guide-quote">我不是一下子变优秀，<br>而是每天都在制造负熵。</blockquote>
+
+        <section class="card history-card">
+          <h3>7 个核心方向</h3>
+          <div class="direction-grid">
+            <article><b>01 身体负熵</b><p>少甜、规律吃饭、走路 20–40 分钟，固定作息。</p></article>
+            <article><b>02 空间负熵</b><p>床铺整理、桌面归位、垃圾当天扔，物品有固定位置。</p></article>
+            <article><b>03 形象负熵</b><p>头发清爽、皮肤保湿防晒、衣服干净，动作轻一点。</p></article>
+            <article><b>04 语言负熵</b><p>英语 20 分钟、日语 10 分钟，每天积累不中断。</p></article>
+            <article><b>05 金钱负熵</b><p>每天记账，每周检查扣费，购买前先判断真实需要。</p></article>
+            <article><b>06 事业负熵</b><p>每天留下一个内容、笔记、工具测试或页面成果。</p></article>
+            <article><b>07 情绪负熵</b><p>睡前复盘，不被太多目标拉走注意力，稳定内心。</p></article>
+          </div>
+        </section>
+
+        <section class="card history-card">
+          <h3>每日负熵时间表</h3>
+          <div class="schedule-list">
+            <div><span>☀️ 早上</span><p>喝水、整理床铺、护肤、早餐、晨写与核心意图。</p></div>
+            <div><span>🌤 上午 / 中午</span><p>推进一个现实结果，优先做能看见成果的事。</p></div>
+            <div><span>🌿 下午</span><p>走路、审美输入、深度阅读与一个小产出。</p></div>
+            <div><span>🌙 晚上</span><p>洗澡护肤、整理房间、形体训练、复盘并准备明天。</p></div>
+          </div>
+        </section>
+
+        <section class="card history-card">
+          <h3>避免 6 种熵增行为</h3>
+          <ul class="avoid-list">
+            <li>一醒来就刷手机——先晨写，再看手机</li>
+            <li>同时开太多目标——只专注今日一件核心事</li>
+            <li>买东西代替改变——先问：需要吗？有结果吗？</li>
+            <li>只收藏不整理——每天至少产出一个结果</li>
+            <li>情绪上头做决定——先睡觉，明天再说</li>
+            <li>晚上继续看刺激内容——换成复盘或轻阅读</li>
+          </ul>
+        </section>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="主导航">
+      <button class="nav-item active" data-page="today" type="button"><span>⌂</span>今日</button>
+      <button class="nav-item" data-page="review" type="button"><span>✎</span>复盘</button>
+      <button class="nav-item" data-page="history" type="button"><span>◷</span>历史</button>
+      <button class="nav-item" data-page="guide" type="button"><span>❀</span>负熵</button>
+    </nav>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+</body>
+</html>
