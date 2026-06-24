@@ -22,6 +22,7 @@ let records;
 let toastTimer;
 let cloudClient;
 let cloudSyncTimer;
+let cloudPullTimer;
 
 const DAILY_TASK_TEMPLATE = [
   { key: 'm1', title: '身体激活', desc: '拉伸或散步 10 分钟，冷启动神经系统', category: '认知修炼' },
@@ -135,17 +136,33 @@ async function syncCloud() {
   if (!cloudClient) return;
   setCloudStatus('正在同步…', 'syncing');
   try {
-    await cloudClient.updateDocument({
-      databaseId: APPWRITE_DATABASE_ID,
-      collectionId: APPWRITE_COLLECTION_ID,
-      documentId: APPWRITE_DOCUMENT_ID,
-      data: { records: JSON.stringify(records) }
-    });
+    await cloudClient.updateDocument(
+      APPWRITE_DATABASE_ID,
+      APPWRITE_COLLECTION_ID,
+      APPWRITE_DOCUMENT_ID,
+      { records: JSON.stringify(records) }
+    );
     setCloudStatus('已同步到 Appwrite', 'ok');
   } catch (error) {
     console.warn('Appwrite sync unavailable:', error);
     setCloudStatus('已保存本地 · 云端稍后重试', 'error');
   }
+}
+
+async function pullCloud() {
+  if (!cloudClient) return;
+  const data = await cloudClient.getDocument(
+    APPWRITE_DATABASE_ID,
+    APPWRITE_COLLECTION_ID,
+    APPWRITE_DOCUMENT_ID
+  );
+  const cloudRecords = data?.records ? JSON.parse(data.records) : {};
+  if (!cloudRecords || typeof cloudRecords !== 'object') return;
+  const before = JSON.stringify(records);
+  records = mergeRecords(records, cloudRecords);
+  if (before === JSON.stringify(records)) return;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+  if (!['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) renderAll();
 }
 
 async function initCloud() {
@@ -159,18 +176,13 @@ async function initCloud() {
       .setEndpoint(APPWRITE_ENDPOINT)
       .setProject(APPWRITE_PROJECT_ID);
     cloudClient = new Appwrite.Databases(client);
-    const data = await cloudClient.getDocument({
-      databaseId: APPWRITE_DATABASE_ID,
-      collectionId: APPWRITE_COLLECTION_ID,
-      documentId: APPWRITE_DOCUMENT_ID
-    });
-    const cloudRecords = data?.records ? JSON.parse(data.records) : {};
-    if (cloudRecords && typeof cloudRecords === 'object') {
-      records = mergeRecords(records, cloudRecords);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-      renderAll();
-    }
+    await pullCloud();
+    renderAll();
     await syncCloud();
+    clearInterval(cloudPullTimer);
+    cloudPullTimer = setInterval(() => {
+      if (document.visibilityState === 'visible') pullCloud().catch((error) => console.warn('Appwrite pull unavailable:', error));
+    }, 15000);
   } catch (error) {
     console.warn('Appwrite sync unavailable:', error);
     setCloudStatus('已保存在本地 · 云端稍后重试', 'error');
