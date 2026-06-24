@@ -399,7 +399,89 @@ elements.reviewForm.addEventListener('submit', (event) => {
 elements.recordDate.addEventListener('change', () => setSelectedDate(elements.recordDate.value));
 elements.historyDate.addEventListener('change', () => setSelectedDate(elements.historyDate.value));
 
-$$('[data-page]').forEach((button) => button.addEventListener('click', () => switchPage(button.dataset.page)));
+// ── Finance ──
+let finYear = new Date().getFullYear();
+let finMonth = new Date().getMonth();
+
+function renderFinance() {
+  const ml = ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
+  $('#finMonthLabel').textContent = `${finYear}年${ml[finMonth]}`;
+
+  const todayKey = localDateKey();
+  let monthTotal = 0, todayTotal = 0, count = 0;
+  const methodMap = {};
+  const monthRecords = [];
+
+  Object.entries(records).forEach(([date, day]) => {
+    const d = new Date(`${date}T00:00:00`);
+    if (!Array.isArray(day.payments)) return;
+    day.payments.forEach((p) => {
+      const amt = Number(p.amount || 0);
+      if (date === todayKey) todayTotal += amt;
+      if (d.getFullYear() === finYear && d.getMonth() === finMonth) {
+        monthTotal += amt;
+        count++;
+        const m = p.method || '其他';
+        methodMap[m] = (methodMap[m] || 0) + amt;
+        monthRecords.push({ ...p, date });
+      }
+    });
+  });
+
+  const daysInMonth = new Date(finYear, finMonth + 1, 0).getDate();
+  const daysPassed = finYear === new Date().getFullYear() && finMonth === new Date().getMonth()
+    ? new Date().getDate() : daysInMonth;
+  const avg = daysPassed > 0 ? monthTotal / daysPassed : 0;
+
+  $('#finMonthTotal').textContent = money(monthTotal);
+  $('#finTodayTotal').textContent = money(todayTotal);
+  $('#finMonthCount').textContent = `${count} 笔`;
+  $('#finDailyAvg').textContent = money(avg);
+  $('#finRecordBadge').textContent = `${count} 笔`;
+
+  // method breakdown
+  const sorted = Object.entries(methodMap).sort((a, b) => b[1] - a[1]);
+  const maxAmt = sorted[0]?.[1] || 1;
+  $('#finMethodBreakdown').innerHTML = sorted.length
+    ? `<div class="fin-method-row">${sorted.map(([name, amt]) => {
+        const pct = monthTotal > 0 ? Math.round(amt / monthTotal * 100) : 0;
+        const w = Math.round(amt / maxAmt * 100);
+        return `<div class="fin-method-item"><div class="fin-method-top"><span class="fin-method-name">${escapeHTML(name)}</span><span><span class="fin-method-amt">${money(amt)}</span><span class="fin-method-pct">${pct}%</span></span></div><div class="fin-bar-track"><div class="fin-bar-fill" style="width:${w}%"></div></div></div>`;
+      }).join('')}</div>`
+    : '<p class="history-muted" style="margin:0;padding:4px 0">本月暂无支出</p>';
+
+  // records list
+  monthRecords.sort((a, b) => b.date.localeCompare(a.date) || b.time?.localeCompare(a.time || '') || 0);
+  $('#finEmpty').hidden = monthRecords.length > 0;
+  $('#finRecordList').innerHTML = monthRecords.map((p) => `
+    <div class="fin-record-row">
+      <div class="fin-record-info">
+        <div class="fin-record-name">${escapeHTML(p.item)}</div>
+        <div class="fin-record-meta">${escapeHTML(p.method || '')}${p.note ? ` · ${escapeHTML(p.note)}` : ''}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="fin-record-amt">${money(p.amount)}</div>
+        <div class="fin-record-date">${p.date} ${p.time || ''}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+$('#finPrev').addEventListener('click', () => {
+  finMonth--; if (finMonth < 0) { finMonth = 11; finYear--; }
+  renderFinance();
+});
+$('#finNext').addEventListener('click', () => {
+  const now = new Date();
+  if (finYear > now.getFullYear() || (finYear === now.getFullYear() && finMonth >= now.getMonth())) return;
+  finMonth++; if (finMonth > 11) { finMonth = 0; finYear++; }
+  renderFinance();
+});
+
+$$('[data-page]').forEach((button) => button.addEventListener('click', () => {
+  if (button.dataset.page === 'finance') renderFinance();
+  switchPage(button.dataset.page);
+}));
 $('#openReview').addEventListener('click', () => switchPage('review'));
 $('#jumpToday').addEventListener('click', () => { setSelectedDate(localDateKey()); switchPage('today'); });
 

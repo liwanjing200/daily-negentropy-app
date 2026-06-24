@@ -192,6 +192,28 @@ textarea { resize: vertical; line-height: 1.65; }
 .task-desc { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; line-height: 1.45; }
 .task-category { display: inline-block; margin-top: 5px; padding: 2px 7px; border-radius: 99px; color: var(--rose-dark); background: var(--rose-pale); font-size: 9px; }
 
+/* ── Finance ── */
+.fin-month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.fin-nav-btn { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: rgba(255,255,255,.7); color: var(--text); font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.fin-nav-btn:active { background: var(--rose-pale); }
+#finMonthLabel { font-size: 16px; font-weight: 650; color: var(--text); }
+.fin-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.fin-method-row { display: flex; flex-direction: column; gap: 8px; }
+.fin-method-item { display: flex; flex-direction: column; gap: 4px; }
+.fin-method-top { display: flex; justify-content: space-between; align-items: center; }
+.fin-method-name { font-size: 12.5px; color: var(--muted); }
+.fin-method-amt { font-size: 13px; font-weight: 650; color: var(--text); }
+.fin-method-pct { font-size: 10px; color: var(--muted); margin-left: 4px; }
+.fin-bar-track { height: 4px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.fin-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--rose), #f0c4c2); transition: width .45s ease; }
+.fin-record-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.fin-record-row:last-child { border-bottom: none; }
+.fin-record-info { flex: 1; min-width: 0; }
+.fin-record-name { font-size: 13.5px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fin-record-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.fin-record-amt { font-size: 15px; font-weight: 650; color: var(--text); white-space: nowrap; }
+.fin-record-date { font-size: 10px; color: var(--muted); white-space: nowrap; text-align: right; }
+
 .toast { position: fixed; z-index: 30; left: 50%; bottom: 100px; padding: 10px 16px; transform: translate(-50%, 15px); border-radius: 99px; color: #fff; background: rgba(84,73,70,.9); opacity: 0; pointer-events: none; transition: .25s; font-size: 13px; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 

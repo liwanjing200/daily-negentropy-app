@@ -160,6 +160,56 @@
         <div id="historyContent"></div>
       </section>
 
+      <section class="page" id="financePage">
+        <div class="page-title simple-title">
+          <div>
+            <p class="section-kicker">FINANCE</p>
+            <h2>财务汇总</h2>
+          </div>
+        </div>
+
+        <div class="fin-month-nav card soft-card">
+          <button class="fin-nav-btn" id="finPrev" type="button">‹</button>
+          <span id="finMonthLabel"></span>
+          <button class="fin-nav-btn" id="finNext" type="button">›</button>
+        </div>
+
+        <div class="fin-stats">
+          <article class="summary-card rose">
+            <span>本月支出</span>
+            <strong id="finMonthTotal">¥0.00</strong>
+          </article>
+          <article class="summary-card cream">
+            <span>今日支出</span>
+            <strong id="finTodayTotal">¥0.00</strong>
+          </article>
+          <article class="summary-card lilac">
+            <span>记录笔数</span>
+            <strong id="finMonthCount">0 笔</strong>
+          </article>
+          <article class="summary-card sage-summary">
+            <span>日均支出</span>
+            <strong id="finDailyAvg">¥0.00</strong>
+          </article>
+        </div>
+
+        <section class="card section-card">
+          <div class="section-heading">
+            <div><p class="section-kicker">BY METHOD</p><h3>支付方式</h3></div>
+          </div>
+          <div id="finMethodBreakdown"></div>
+        </section>
+
+        <section class="card section-card">
+          <div class="section-heading">
+            <div><p class="section-kicker">RECORDS</p><h3>本月明细</h3></div>
+            <span class="count-badge" id="finRecordBadge">0 笔</span>
+          </div>
+          <div class="empty-state" id="finEmpty">本月暂无支出记录。</div>
+          <div id="finRecordList"></div>
+        </section>
+      </section>
+
       <section class="page" id="guidePage">
         <div class="page-title simple-title">
           <div>
@@ -210,12 +260,13 @@
       <button class="nav-item active" data-page="today" type="button"><span>⌂</span>今日</button>
       <button class="nav-item" data-page="review" type="button"><span>✎</span>复盘</button>
       <button class="nav-item" data-page="history" type="button"><span>◷</span>历史</button>
+      <button class="nav-item" data-page="finance" type="button"><span>💰</span>财务</button>
       <button class="nav-item" data-page="guide" type="button"><span>❀</span>负熵</button>
     </nav>
   </div>
 
   <div class="toast" id="toast" role="status"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=20260624-supabase1"></script>
+  <script src="app.js?v=20260624-finance1"></script>
 </body>
 </html>
