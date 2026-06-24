@@ -12,7 +12,7 @@
 - 按日期查看任务、复盘和付款历史
 - 7 个负熵方向、每日时间表和行动提醒
 - 自动迁移旧版 `negentropy_v3` 打卡数据
-- 数据先保存在浏览器 `localStorage`，并同步到 Appwrite
+- 数据先保存在浏览器 `localStorage`，并同步到 Supabase
 
 ## 使用
 
