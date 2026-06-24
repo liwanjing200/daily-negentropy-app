@@ -1,6 +1,9 @@
 const STORAGE_KEY = 'dailyRecords';
-const SUPABASE_URL = 'https://jmfuujyeodhjhgxezqpv.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zDXnDnWE665dD9kMmSqxOQ_U0Y_V5ib';
+const APPWRITE_ENDPOINT = 'https://nyc.cloud.appwrite.io/v1';
+const APPWRITE_PROJECT_ID = '6a381a580025b7dd39d3';
+const APPWRITE_DATABASE_ID = 'creator_signal';
+const APPWRITE_COLLECTION_ID = 'daily_records';
+const APPWRITE_DOCUMENT_ID = 'shared';
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -18,7 +21,6 @@ let selectedDate = localDateKey();
 let records;
 let toastTimer;
 let cloudClient;
-let cloudUser;
 let cloudSyncTimer;
 
 const DAILY_TASK_TEMPLATE = [
@@ -130,49 +132,47 @@ function mergeRecords(localRecords, cloudRecords) {
 }
 
 async function syncCloud() {
-  if (!cloudClient || !cloudUser) return;
+  if (!cloudClient) return;
   setCloudStatus('正在同步…', 'syncing');
-  const { error } = await cloudClient.from('daily_data').upsert({
-    user_id: cloudUser.id,
-    records,
-    updated_at: new Date().toISOString()
-  }, { onConflict: 'user_id' });
-  setCloudStatus(error ? '已保存本地 · 云端稍后重试' : '已同步到云端', error ? 'error' : 'ok');
+  try {
+    await cloudClient.updateDocument({
+      databaseId: APPWRITE_DATABASE_ID,
+      collectionId: APPWRITE_COLLECTION_ID,
+      documentId: APPWRITE_DOCUMENT_ID,
+      data: { records: JSON.stringify(records) }
+    });
+    setCloudStatus('已同步到 Appwrite', 'ok');
+  } catch (error) {
+    console.warn('Appwrite sync unavailable:', error);
+    setCloudStatus('已保存本地 · 云端稍后重试', 'error');
+  }
 }
 
 async function initCloud() {
-  if (!window.supabase?.createClient) {
+  if (!window.Appwrite?.Client) {
     setCloudStatus('已保存在本地', 'error');
     return;
   }
 
   try {
-    cloudClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-    const { data: sessionData } = await cloudClient.auth.getSession();
-    let session = sessionData.session;
-    if (!session) {
-      const { data, error } = await cloudClient.auth.signInAnonymously();
-      if (error) throw error;
-      session = data.session;
-    }
-    cloudUser = session?.user;
-    if (!cloudUser) throw new Error('无法建立云端身份');
-
-    const { data, error } = await cloudClient
-      .from('daily_data')
-      .select('records')
-      .eq('user_id', cloudUser.id)
-      .maybeSingle();
-    if (error) throw error;
-
-    if (data?.records) {
-      records = mergeRecords(records, data.records);
+    const client = new Appwrite.Client()
+      .setEndpoint(APPWRITE_ENDPOINT)
+      .setProject(APPWRITE_PROJECT_ID);
+    cloudClient = new Appwrite.Databases(client);
+    const data = await cloudClient.getDocument({
+      databaseId: APPWRITE_DATABASE_ID,
+      collectionId: APPWRITE_COLLECTION_ID,
+      documentId: APPWRITE_DOCUMENT_ID
+    });
+    const cloudRecords = data?.records ? JSON.parse(data.records) : {};
+    if (cloudRecords && typeof cloudRecords === 'object') {
+      records = mergeRecords(records, cloudRecords);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
       renderAll();
     }
     await syncCloud();
   } catch (error) {
-    console.warn('Supabase sync unavailable:', error);
+    console.warn('Appwrite sync unavailable:', error);
     setCloudStatus('已保存在本地 · 云端稍后重试', 'error');
   }
 }

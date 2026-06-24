@@ -12,8 +12,10 @@
 - 按日期查看任务、复盘和付款历史
 - 7 个负熵方向、每日时间表和行动提醒
 - 自动迁移旧版 `negentropy_v3` 打卡数据
-- 全部数据保存在浏览器 `localStorage`，无需后端
+- 数据先保存在浏览器 `localStorage`，并同步到 Appwrite
 
 ## 使用
+
+线上地址：<https://daily-negentropy-app.appwrite.network/>
 
 直接打开 `index.html` 即可运行。建议在 iPhone Safari 中添加到主屏幕使用。
