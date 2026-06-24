@@ -1,4 +1,21 @@
 const STORAGE_KEY = 'dailyRecords';
+
+const PAY_CATS = [
+  { id: '餐饮', icon: '🍜' }, { id: '购物', icon: '🛍' }, { id: '交通', icon: '🚌' },
+  { id: '娱乐', icon: '🎬' }, { id: '生活', icon: '🏠' }, { id: '学习', icon: '📚' },
+  { id: '健康', icon: '💊' }, { id: '其他', icon: '💸' }
+];
+let selectedPayCat = '餐饮';
+
+function catIcon(cat) {
+  return PAY_CATS.find((c) => c.id === cat)?.icon || '💸';
+}
+
+function selectPayCat(el) {
+  document.querySelectorAll('.payment-cat-chip').forEach((c) => c.classList.remove('active'));
+  el.classList.add('active');
+  selectedPayCat = el.dataset.cat;
+}
 const SUPABASE_URL = 'https://jmfuujyeodhjhgxezqpv.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zDXnDnWE665dD9kMmSqxOQ_U0Y_V5ib';
 const SUPABASE_TABLE = 'shared_daily_data';
@@ -267,7 +284,8 @@ function renderPayments() {
   elements.paymentEmpty.hidden = payments.length > 0;
   elements.paymentList.innerHTML = payments.map((payment) => `
     <div class="payment-row" data-id="${payment.id}">
-      <div>
+      <div class="pay-cat-icon">${catIcon(payment.category)}</div>
+      <div style="flex:1;min-width:0">
         <span class="payment-name">${escapeHTML(payment.item)}</span>
         <span class="payment-meta">${escapeHTML(payment.time)} · ${escapeHTML(payment.method)}${payment.note ? ` · ${escapeHTML(payment.note)}` : ''}</span>
       </div>
@@ -328,7 +346,7 @@ function renderHistory() {
     </section>
     <section class="card history-card">
       <h3>付款记录 · <span class="history-total">${money(total)}</span></h3>
-      ${record.payments.length ? record.payments.map((payment) => `<div class="payment-row"><div><span class="payment-name">${escapeHTML(payment.item)}</span><span class="payment-meta">${escapeHTML(payment.time)} · ${escapeHTML(payment.method)}${payment.note ? ` · ${escapeHTML(payment.note)}` : ''}</span></div><span class="payment-amount">${money(payment.amount)}</span></div>`).join('') : '<p class="history-muted">这一天没有付款记录。</p>'}
+      ${record.payments.length ? record.payments.map((payment) => `<div class="payment-row"><div class="pay-cat-icon">${catIcon(payment.category)}</div><div style="flex:1;min-width:0"><span class="payment-name">${escapeHTML(payment.item)}</span><span class="payment-meta">${escapeHTML(payment.time)} · ${escapeHTML(payment.method)}${payment.note ? ` · ${escapeHTML(payment.note)}` : ''}</span></div><span class="payment-amount">${money(payment.amount)}</span></div>`).join('') : '<p class="history-muted">这一天没有付款记录。</p>'}
     </section>
   `;
 }
@@ -368,14 +386,17 @@ elements.paymentForm.addEventListener('submit', (event) => {
   getRecord().payments.push({
     id: uid(), time: $('#paymentTime').value, item: $('#paymentItem').value.trim(),
     amount: Number($('#paymentAmount').value), method: $('#paymentMethod').value,
+    category: selectedPayCat,
     note: $('#paymentNote').value.trim(), createdAt: new Date().toISOString()
   });
   elements.paymentForm.reset();
   $('#paymentTime').value = nowTime();
+  selectedPayCat = '餐饮';
+  document.querySelectorAll('.payment-cat-chip').forEach((c) => c.classList.toggle('active', c.dataset.cat === '餐饮'));
   saveRecords();
   renderPayments();
   renderHistory();
-  toast('付款记录已保存');
+  toast('付款记录已保存 ✓');
 });
 
 elements.paymentList.addEventListener('click', (event) => {
@@ -409,7 +430,7 @@ function renderFinance() {
 
   const todayKey = localDateKey();
   let monthTotal = 0, todayTotal = 0, count = 0;
-  const methodMap = {};
+  const catMap = {};
   const monthRecords = [];
 
   Object.entries(records).forEach(([date, day]) => {
@@ -421,8 +442,8 @@ function renderFinance() {
       if (d.getFullYear() === finYear && d.getMonth() === finMonth) {
         monthTotal += amt;
         count++;
-        const m = p.method || '其他';
-        methodMap[m] = (methodMap[m] || 0) + amt;
+        const cat = p.category || '其他';
+        catMap[cat] = (catMap[cat] || 0) + amt;
         monthRecords.push({ ...p, date });
       }
     });
@@ -439,25 +460,26 @@ function renderFinance() {
   $('#finDailyAvg').textContent = money(avg);
   $('#finRecordBadge').textContent = `${count} 笔`;
 
-  // method breakdown
-  const sorted = Object.entries(methodMap).sort((a, b) => b[1] - a[1]);
-  const maxAmt = sorted[0]?.[1] || 1;
-  $('#finMethodBreakdown').innerHTML = sorted.length
-    ? `<div class="fin-method-row">${sorted.map(([name, amt]) => {
+  // category breakdown using PAY_CATS order
+  const catSorted = PAY_CATS.map((c) => ({ ...c, amt: catMap[c.id] || 0 })).filter((c) => c.amt > 0).sort((a, b) => b.amt - a.amt);
+  const maxAmt = catSorted[0]?.amt || 1;
+  $('#finMethodBreakdown').innerHTML = catSorted.length
+    ? `<div class="fin-method-row">${catSorted.map(({ id, icon, amt }) => {
         const pct = monthTotal > 0 ? Math.round(amt / monthTotal * 100) : 0;
         const w = Math.round(amt / maxAmt * 100);
-        return `<div class="fin-method-item"><div class="fin-method-top"><span class="fin-method-name">${escapeHTML(name)}</span><span><span class="fin-method-amt">${money(amt)}</span><span class="fin-method-pct">${pct}%</span></span></div><div class="fin-bar-track"><div class="fin-bar-fill" style="width:${w}%"></div></div></div>`;
+        return `<div class="fin-method-item"><div class="fin-method-top"><span class="fin-method-name">${icon} ${escapeHTML(id)}</span><span><span class="fin-method-amt">${money(amt)}</span><span class="fin-method-pct">${pct}%</span></span></div><div class="fin-bar-track"><div class="fin-bar-fill" style="width:${w}%"></div></div></div>`;
       }).join('')}</div>`
-    : '<p class="history-muted" style="margin:0;padding:4px 0">本月暂无支出</p>';
+    : '<p class="history-muted" style="margin:6px 0">本月暂无支出</p>';
 
   // records list
   monthRecords.sort((a, b) => b.date.localeCompare(a.date) || b.time?.localeCompare(a.time || '') || 0);
   $('#finEmpty').hidden = monthRecords.length > 0;
   $('#finRecordList').innerHTML = monthRecords.map((p) => `
     <div class="fin-record-row">
+      <div class="fin-cat-icon">${catIcon(p.category)}</div>
       <div class="fin-record-info">
         <div class="fin-record-name">${escapeHTML(p.item)}</div>
-        <div class="fin-record-meta">${escapeHTML(p.method || '')}${p.note ? ` · ${escapeHTML(p.note)}` : ''}</div>
+        <div class="fin-record-meta">${p.category ? escapeHTML(p.category) + ' · ' : ''}${escapeHTML(p.method || '')}${p.note ? ` · ${escapeHTML(p.note)}` : ''}</div>
       </div>
       <div style="text-align:right">
         <div class="fin-record-amt">${money(p.amount)}</div>
