@@ -44,6 +44,11 @@
           </article>
         </div>
 
+        <div id="yesterdayImprove" style="display:none" class="improve-banner">
+          <p class="improve-label">✦ 昨日复盘 · 今天要改进</p>
+          <p class="improve-text" id="yesterdayImproveText"></p>
+        </div>
+
         <section class="card section-card">
           <div class="section-heading">
             <div>
@@ -56,8 +61,7 @@
             <input id="taskInput" type="text" maxlength="80" placeholder="写下一件想完成的事…" required>
             <button type="submit">添加</button>
           </form>
-          <div class="empty-state" id="taskEmpty">今天还没有任务，慢慢开始也很好。</div>
-          <ul class="task-list" id="taskList"></ul>
+          <div id="taskList"></div>
         </section>
 
         <section class="card section-card">

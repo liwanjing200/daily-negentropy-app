@@ -241,26 +241,73 @@ function renderAll() {
   renderHistory();
 }
 
+const TASK_GROUP_META = {
+  '认知修炼': { icon: '🧠', color: 'group-mind' },
+  '女性修炼': { icon: '🌸', color: 'group-body' },
+  '自定义':   { icon: '✦',  color: 'group-custom' },
+};
+
+function taskItemHTML(task) {
+  return `
+    <li class="task-item ${task.completed ? 'done' : ''}" data-id="${task.id}">
+      <input class="task-check" type="checkbox" ${task.completed ? 'checked' : ''} aria-label="标记任务完成">
+      <div style="flex:1;min-width:0">
+        <span class="task-title">${escapeHTML(task.title)}</span>
+        ${task.desc ? `<span class="task-desc">${escapeHTML(task.desc)}</span>` : ''}
+        ${task.completedAt ? `<span class="task-time">完成于 ${escapeHTML(task.completedAt)}</span>` : ''}
+      </div>
+      <button class="delete-button" type="button" aria-label="删除任务">×</button>
+    </li>`;
+}
+
 function renderTasks() {
   const tasks = getRecord().tasks;
-  const completed = tasks.filter((task) => task.completed).length;
+  const completed = tasks.filter((t) => t.completed).length;
   const rate = tasks.length ? Math.round(completed / tasks.length * 100) : 0;
   elements.completionRate.textContent = `${rate}%`;
   elements.streakDays.textContent = `${calculateStreak()} 天`;
   elements.taskCount.textContent = `${completed} / ${tasks.length}`;
-  elements.taskEmpty.hidden = tasks.length > 0;
-  elements.taskList.innerHTML = tasks.map((task) => `
-    <li class="task-item ${task.completed ? 'done' : ''}" data-id="${task.id}">
-      <input class="task-check" type="checkbox" ${task.completed ? 'checked' : ''} aria-label="标记任务完成">
-      <div>
-        <span class="task-title">${escapeHTML(task.title)}</span>
-        ${task.desc ? `<span class="task-desc">${escapeHTML(task.desc)}</span>` : ''}
-        ${task.category ? `<span class="task-category">${escapeHTML(task.category)}</span>` : ''}
-        ${task.completedAt ? `<span class="task-time">完成于 ${escapeHTML(task.completedAt)}</span>` : ''}
-      </div>
-      <button class="delete-button" type="button" aria-label="删除任务">×</button>
-    </li>
-  `).join('');
+
+  // group by category
+  const groups = {};
+  tasks.forEach((t) => {
+    const cat = t.category || '自定义';
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(t);
+  });
+
+  const ORDER = ['认知修炼', '女性修炼', '自定义'];
+  const cats = [...ORDER.filter((c) => groups[c]), ...Object.keys(groups).filter((c) => !ORDER.includes(c))];
+
+  let html = '';
+  cats.forEach((cat) => {
+    const meta = TASK_GROUP_META[cat] || { icon: '●', color: 'group-custom' };
+    const list = groups[cat];
+    const done = list.filter((t) => t.completed).length;
+    html += `
+      <div class="task-group">
+        <div class="task-group-header ${meta.color}">
+          <span class="task-group-icon">${meta.icon}</span>
+          <span class="task-group-name">${escapeHTML(cat)}</span>
+          <span class="task-group-count">${done}/${list.length}</span>
+        </div>
+        <ul class="task-list">${list.map(taskItemHTML).join('')}</ul>
+      </div>`;
+  });
+
+  $('#taskList').innerHTML = html || '<div class="empty-state">今天还没有任务，慢慢开始也很好。</div>';
+
+  // show yesterday's improve note
+  const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+  const yKey = localDateKey(yesterday);
+  const improve = records[yKey]?.review?.improve?.trim();
+  const banner = $('#yesterdayImprove');
+  if (improve) {
+    $('#yesterdayImproveText').textContent = improve;
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+  }
 }
 
 function calculateStreak() {
