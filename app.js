@@ -86,7 +86,7 @@ function uid() {
 function blankRecord() {
   return {
     tasks: DAILY_TASK_TEMPLATE.map((task) => ({ ...task, id: task.key, completed: false, completedAt: null })),
-    review: {}, payments: []
+    review: {}, payments: [], makeup: {}
   };
 }
 
@@ -118,6 +118,7 @@ function getRecord(date = selectedDate) {
   records[date].tasks = Array.isArray(records[date].tasks) ? records[date].tasks : [];
   records[date].review = records[date].review || {};
   records[date].payments = Array.isArray(records[date].payments) ? records[date].payments : [];
+  records[date].makeup = records[date].makeup || {};
   return records[date];
 }
 
@@ -549,10 +550,144 @@ $('#finNext').addEventListener('click', () => {
 
 $$('[data-page]').forEach((button) => button.addEventListener('click', () => {
   if (button.dataset.page === 'finance') renderFinance();
+  if (button.dataset.page === 'makeup') renderMakeup();
   switchPage(button.dataset.page);
 }));
 $('#openReview').addEventListener('click', () => switchPage('review'));
 $('#jumpToday').addEventListener('click', () => { setSelectedDate(localDateKey()); switchPage('today'); });
+
+// ── Makeup album ──
+const MAKEUP_BUCKET = 'makeup-photos';
+const MAKEUP_NS = 'daily-negentropy';
+let makeupKind = 'after';
+const makeupUrlCache = {};
+
+function getMakeup(date = selectedDate) {
+  const rec = getRecord(date);
+  rec.makeup = rec.makeup || {};
+  return rec.makeup;
+}
+
+async function makeupSignedUrl(path) {
+  if (!path || !cloudClient) return null;
+  if (makeupUrlCache[path]) return makeupUrlCache[path];
+  const { data, error } = await cloudClient.storage.from(MAKEUP_BUCKET).createSignedUrl(path, 3600);
+  if (error) { console.warn('makeup signed url:', error); return null; }
+  makeupUrlCache[path] = data.signedUrl;
+  return data.signedUrl;
+}
+
+function compressImage(file, maxSize = 1080, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    const img = new Image();
+    reader.onload = () => { img.src = reader.result; };
+    reader.onerror = reject;
+    img.onload = () => {
+      let { width, height } = img;
+      if (width >= height && width > maxSize) { height = Math.round(height * maxSize / width); width = maxSize; }
+      else if (height > width && height > maxSize) { width = Math.round(width * maxSize / height); height = maxSize; }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('compress failed'))), 'image/jpeg', quality);
+    };
+    img.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadMakeup(file) {
+  if (!cloudClient) { toast('云端未连接，稍后再试'); return; }
+  toast('正在上传…');
+  try {
+    const blob = await compressImage(file);
+    const path = `${MAKEUP_NS}/${selectedDate}-${makeupKind}-${Date.now()}.jpg`;
+    const { error } = await cloudClient.storage.from(MAKEUP_BUCKET).upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+    if (error) throw error;
+    getMakeup()[makeupKind] = path;
+    saveRecords();
+    renderMakeup();
+    renderHistory();
+    toast('照片已保存 ✓');
+  } catch (error) {
+    console.warn('makeup upload failed:', error);
+    toast('上传失败，请重试');
+  }
+}
+
+async function setMakeupSlot(selector, emoji, label, path) {
+  const slot = $(selector);
+  if (path) {
+    const url = await makeupSignedUrl(path);
+    slot.innerHTML = url
+      ? `<img class="ms-photo" src="${url}" alt=""><span class="ms-retake">换一张</span>`
+      : `<span class="ms-emoji">${emoji}</span><span class="ms-label">${label}</span>`;
+  } else {
+    slot.innerHTML = `<span class="ms-emoji">${emoji}</span><span class="ms-label">${label}</span>`;
+  }
+}
+
+function makeupDays() {
+  return Object.keys(records)
+    .filter((d) => records[d]?.makeup && (records[d].makeup.before || records[d].makeup.after))
+    .sort();
+}
+
+async function renderMakeup() {
+  $('#makeupDateLabel').textContent = displayDate(selectedDate, false);
+  const makeup = getMakeup();
+  await setMakeupSlot('#slotBefore', '📷', '素颜 before', makeup.before);
+  await setMakeupSlot('#slotAfter', '💄', '妆后 after', makeup.after);
+
+  const days = makeupDays();
+  const compareCard = $('#makeupCompareCard');
+  const compare = $('#makeupCompare');
+  if (days.length >= 2) {
+    const first = days[0];
+    const last = days[days.length - 1];
+    const fu = await makeupSignedUrl(records[first].makeup.after || records[first].makeup.before);
+    const lu = await makeupSignedUrl(records[last].makeup.after || records[last].makeup.before);
+    compare.innerHTML = `<div class="makeup-compare">
+      <figure><img src="${fu}" alt=""><figcaption>最早 · ${first}</figcaption></figure>
+      <figure><img src="${lu}" alt=""><figcaption>最近 · ${last}</figcaption></figure>
+    </div>`;
+    compareCard.style.display = '';
+  } else {
+    compareCard.style.display = 'none';
+  }
+
+  const timeline = $('#makeupTimeline');
+  if (!days.length) {
+    timeline.innerHTML = '<p class="history-muted" style="margin:6px 0">还没有照片，上传今天的妆容开始吧 ✿</p>';
+    return;
+  }
+  const items = await Promise.all(days.slice().reverse().map(async (d) => {
+    const m = records[d].makeup;
+    const url = await makeupSignedUrl(m.after || m.before);
+    return `<button class="makeup-tl-item" type="button" data-url="${url}" data-date="${d}"><img src="${url}" alt=""><span>${d.slice(5)}</span></button>`;
+  }));
+  timeline.innerHTML = items.join('');
+}
+
+$('#slotBefore').addEventListener('click', () => { makeupKind = 'before'; $('#makeupFile').click(); });
+$('#slotAfter').addEventListener('click', () => { makeupKind = 'after'; $('#makeupFile').click(); });
+$('#makeupFile').addEventListener('change', (event) => {
+  const file = event.target.files[0];
+  if (file) uploadMakeup(file);
+  event.target.value = '';
+});
+$('#makeupTimeline').addEventListener('click', (event) => {
+  const item = event.target.closest('.makeup-tl-item');
+  if (!item) return;
+  $('#mlImg').src = item.dataset.url;
+  $('#mlDate').textContent = item.dataset.date;
+  $('#makeupLightbox').classList.add('show');
+});
+$('#mlClose').addEventListener('click', () => $('#makeupLightbox').classList.remove('show'));
+$('#makeupLightbox').addEventListener('click', (event) => {
+  if (event.target.id === 'makeupLightbox') $('#makeupLightbox').classList.remove('show');
+});
 
 elements.recordDate.value = selectedDate;
 elements.historyDate.value = selectedDate;

@@ -227,6 +227,41 @@
         </section>
       </section>
 
+      <section class="page" id="makeupPage">
+        <div class="page-title simple-title">
+          <div>
+            <p class="section-kicker">MAKEUP</p>
+            <h2>妆容相册</h2>
+          </div>
+        </div>
+        <p class="makeup-hint">每天存一张，看自己一天天的变化 ✿</p>
+
+        <section class="card section-card">
+          <div class="section-heading">
+            <div><p class="section-kicker">TODAY</p><h3 id="makeupDateLabel">今天</h3></div>
+          </div>
+          <div class="makeup-slots">
+            <button class="makeup-slot" id="slotBefore" type="button"><span class="ms-emoji">📷</span><span class="ms-label">素颜 before</span></button>
+            <button class="makeup-slot" id="slotAfter" type="button"><span class="ms-emoji">💄</span><span class="ms-label">妆后 after</span></button>
+          </div>
+          <input type="file" id="makeupFile" accept="image/*" hidden>
+        </section>
+
+        <section class="card section-card" id="makeupCompareCard" style="display:none">
+          <div class="section-heading">
+            <div><p class="section-kicker">PROGRESS</p><h3>最早 vs 最近</h3></div>
+          </div>
+          <div class="makeup-pad" id="makeupCompare"></div>
+        </section>
+
+        <section class="card section-card">
+          <div class="section-heading">
+            <div><p class="section-kicker">ALBUM</p><h3>全部足迹</h3></div>
+          </div>
+          <div class="makeup-pad" id="makeupTimeline"></div>
+        </section>
+      </section>
+
       <section class="page" id="guidePage">
         <div class="page-title simple-title">
           <div>
@@ -278,12 +313,20 @@
       <button class="nav-item" data-page="review" type="button"><span>✎</span>复盘</button>
       <button class="nav-item" data-page="history" type="button"><span>◷</span>历史</button>
       <button class="nav-item" data-page="finance" type="button"><span>💰</span>财务</button>
+      <button class="nav-item" data-page="makeup" type="button"><span>📸</span>妆容</button>
       <button class="nav-item" data-page="guide" type="button"><span>❀</span>负熵</button>
     </nav>
   </div>
 
   <div class="toast" id="toast" role="status"></div>
+
+  <div class="makeup-lightbox" id="makeupLightbox">
+    <span class="ml-close" id="mlClose">×</span>
+    <img id="mlImg" alt="妆容照片">
+    <p id="mlDate"></p>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=20260624-finance1"></script>
+  <script src="app.js?v=20260627-makeup1"></script>
 </body>
 </html>
